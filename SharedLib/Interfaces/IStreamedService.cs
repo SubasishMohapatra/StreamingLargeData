@@ -17,5 +17,7 @@ namespace SharedLib
         Stream DownloadFile(string query);
         [OperationContract(IsOneWay = true)]
         void UploadFile(Stream data);
+        [OperationContract]
+        Stream GetData();
     }
 }
