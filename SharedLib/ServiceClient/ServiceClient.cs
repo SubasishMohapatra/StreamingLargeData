@@ -60,8 +60,16 @@ namespace SharedLib
             {
                 result = action((T)clientChannel);
                 clientChannel.Close();
-            }           
-            catch (Exception exception)
+            }
+            catch (FaultException e)
+            {
+                Console.WriteLine(e.Message);
+                clientChannel.Abort();
+            }
+            catch (CommunicationException e)
+            {
+            }
+            catch (Exception e)
             {
                 clientChannel.Abort();
             }

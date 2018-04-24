@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace SharedLib
 {
+    [Serializable]    
     public class Employee
     {
         public int EmpID { get; set; }

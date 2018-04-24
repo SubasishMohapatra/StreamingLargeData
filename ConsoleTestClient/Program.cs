@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using StreamingService;
 using Newtonsoft.Json;
+using System.Threading;
 
 namespace ConsoleTestClient
 {
@@ -14,38 +15,29 @@ namespace ConsoleTestClient
     {
         static void Main(string[] args)
         {
-            var stream = new ServiceClient<IStreamedService>().Execute(d => d.GetData());
-            StringBuilder messageBuilder = new StringBuilder();
-            string messageChunk = string.Empty;
-            byte[] messageBuffer = new byte[1024];
-            int bytesRead=0;
-            do
-            {
-                bytesRead = stream.Read(messageBuffer, 0, messageBuffer.Length);
-                messageChunk = Encoding.UTF8.GetString(messageBuffer).Replace("\0","");//remove null objects
-                messageBuilder.Append(messageChunk);
-                messageBuffer = new byte[messageBuffer.Length];
-            } while (bytesRead > 0);
-            var clientMessage = JsonConvert.DeserializeObject<List<Employee>>(messageBuilder.ToString());
-
-            //int counter = 0;
-            //byte[] messageBytes;
-            //string serialized;
-            //IEnumerable<Employee> empSubset;
-            //using (MemoryStream stream = new MemoryStream())
-            //{
-            //    while (1 == 1)
-            //    {
-            //        var min = counter;
-            //        var max = (counter + 1000) <= employees.Count() ? counter + 1000 : employees.Count() - counter;
-            //        empSubset = employees.Where(x => x.EmpID > min && x.EmpID <= max);
-            //        counter += 1000;
-            //        serialized = JsonConvert.SerializeObject(empSubset);
-            //        messageBytes = Encoding.UTF8.GetBytes(serialized);
-            //        stream.Write(messageBytes, 0, messageBytes.Length);
-            //    }
-            //}
-
+            var mainThread = new Thread(() =>
+                 {
+                     var stream = new ServiceClient<IStreamedService>().Execute<Stream>(d => d.GetData());
+                     string messageChunk = string.Empty;
+                     byte[] messageBuffer = new byte[1024];
+                     int bytesRead = 0;
+                     do
+                     {
+                         bytesRead = stream.Read(messageBuffer, 0, messageBuffer.Length);
+                         if (bytesRead <= 0 || bytesRead == 256) break;
+                         messageChunk = Encoding.UTF8.GetString(messageBuffer).Replace("\0", "").Split(']')[0];//remove null objects
+                         if (!String.IsNullOrEmpty(messageChunk))
+                         {
+                             if (messageChunk.EndsWith("}}"))
+                                 messageChunk = messageChunk.Replace("}}", "}");
+                             var clientMessage = JsonConvert.DeserializeObject<List<Employee>>(messageChunk+"]");
+                             clientMessage.ForEach(x => Console.WriteLine($"EmpID:{x.EmpID} Name:{x.Name} Age:{x.Age}"));
+                         }
+                         messageBuffer = new byte[messageBuffer.Length];
+                     } while (bytesRead > 0);
+                 });
+            mainThread.Start();
+            mainThread.Join();
         }
     }
 }
