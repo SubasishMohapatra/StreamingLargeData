@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using StreamingService;
 using Newtonsoft.Json;
 using System.Threading;
+using System.Diagnostics;
 
 namespace ConsoleTestClient
 {
@@ -21,6 +22,8 @@ namespace ConsoleTestClient
                      string messageChunk = string.Empty;
                      byte[] messageBuffer = new byte[1024];
                      int bytesRead = 0;
+                     string unparsedData = string.Empty;
+                     Debug.Flush();
                      do
                      {
                          bytesRead = stream.Read(messageBuffer, 0, messageBuffer.Length);
@@ -30,14 +33,36 @@ namespace ConsoleTestClient
                          {
                              if (messageChunk.EndsWith("}}"))
                                  messageChunk = messageChunk.Replace("}}", "}");
-                             var clientMessage = JsonConvert.DeserializeObject<List<Employee>>(messageChunk+"]");
-                             clientMessage.ForEach(x => Console.WriteLine($"EmpID:{x.EmpID} Name:{x.Name} Age:{x.Age}"));
+                             try
+                             {
+                                 string objectQuery = "";
+                                 unparsedData = ParseAndPrepareMessage(messageChunk, unparsedData, out objectQuery);
+                                 var clientMessage = JsonConvert.DeserializeObject<List<Employee>>(objectQuery);
+                                 clientMessage.ForEach(x =>
+                                 {
+                                     var output = $"EmpID:{x.EmpID} Name:{x.Name} Age:{x.Age}";
+                                     Console.WriteLine(output);
+                                     Trace.WriteLine(output);
+                                 });
+                             }
+                             catch (Exception ex)
+                             {
+                             }
                          }
                          messageBuffer = new byte[messageBuffer.Length];
                      } while (bytesRead > 0);
                  });
             mainThread.Start();
             mainThread.Join();
+        }
+
+        private static string ParseAndPrepareMessage(string incoming, string prepend, out string output)
+        {
+            incoming = incoming.Replace("[", "").Replace("]", "");
+            int indexOfLastItem = incoming.LastIndexOf("}") + 1;
+            var unparsedData = indexOfLastItem != incoming.Length ? incoming.Substring(indexOfLastItem+1, incoming.Length - indexOfLastItem-1) : ""; //-1 is for the comma
+            output = $"[{(prepend + incoming.Substring(0, indexOfLastItem))}]";
+            return unparsedData;
         }
     }
 }

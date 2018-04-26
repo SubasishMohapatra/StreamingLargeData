@@ -16,7 +16,7 @@ namespace StreamingService
         
         public StreamedService()
         {
-            employees = Enumerable.Range(0,1000).Select(x=>
+            employees = Enumerable.Range(0,100000).Select(x=>
                     new Employee() { EmpID = ++x, Name = $"Employee{x}", Age = x % 61 });
         }
 
@@ -48,7 +48,7 @@ namespace StreamingService
                 Func<int, List<Employee>> getRecords = (start) =>
                 {
                     var records = new List<Employee>();
-                    records = employees.Where(x => x.EmpID > start && x.EmpID <= (start + 10)).ToList();
+                    records = employees.Where(x => x.EmpID > start && x.EmpID <= (start + 1000)).ToList();
                     return records;
                 };
                 return new CustomStream(getRecords);

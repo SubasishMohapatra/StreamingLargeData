@@ -57,17 +57,14 @@ public class CustomStream : Stream
         if (count == 256) return count;
         var records = this.GetRecords(recordStartPosition);
         if (records.Count <= 0) return 0;
-        recordStartPosition += 10;
         var serialized = JsonConvert.SerializeObject(records);
-        byte[] tempBuffer = new byte[count];
-        tempBuffer = Encoding.UTF8.GetBytes(serialized);
-        //if (tempBuffer.Length <= buffer.Length)
-        //{
+        var tempBuffer = Encoding.UTF8.GetBytes(serialized);
+        if (tempBuffer.Length <= buffer.Length)
+        {
+            recordStartPosition += 1000;
             tempBuffer.CopyTo(buffer, offset);
             totalBytesRead += tempBuffer.Length;
-        //}
-        //else
-        //    recordStartPosition -= 10;
+        }
         return count;
     }
 
