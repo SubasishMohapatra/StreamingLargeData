@@ -51,24 +51,27 @@ public class CustomStream : Stream
         }
     }
     public override void Flush()
-    {        
+    {
     }
     public override int Read(byte[] buffer, int offset, int count)
     {
         if (count == 256) return count;
         var records = this.GetRecords(recordStartPosition);
-        if (records.Count <= 0) return count;
-        if (records.Count <= Consts.BatchSize)
+        if (records.Count <= 0)
         {
-            records.Add(new Employee() { EmpID = -1, Name = "", Age = -1 });           
+            records.Add(new Employee() { EmpID = -1, Name = "", Age = -1 });
+        }
+        if (records.Count < Consts.BatchSize)
+        {
+            records.Add(new Employee() { EmpID = -1, Name = "", Age = -1 });
         }
         var serialized = JsonConvert.SerializeObject(records);
         var tempBuffer = Encoding.UTF8.GetBytes(serialized);
         if (tempBuffer.Length <= buffer.Length)
         {
-            recordStartPosition += Consts.BatchSize;
             tempBuffer.CopyTo(buffer, offset);
             totalBytesRead += tempBuffer.Length;
+            recordStartPosition += Consts.BatchSize;
         }
         return count;
     }

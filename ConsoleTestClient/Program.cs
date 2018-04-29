@@ -42,7 +42,7 @@ namespace ConsoleTestClient
                                  if (clientMessage.Any(x => x.EmpID == -1))
                                  {
                                      readAll = true;
-                                     clientMessage.RemoveAt(clientMessage.Count - 1);
+                                     clientMessage=clientMessage.TakeWhile(x => x.EmpID != -1).ToList();
                                  }
                                  clientMessage.ForEach(x =>
                                  {
