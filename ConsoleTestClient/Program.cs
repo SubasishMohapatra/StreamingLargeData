@@ -36,21 +36,29 @@ namespace ConsoleTestClient
                              try
                              {
                                  string objectQuery = "";
+                                 var readAll = false;
                                  unparsedData = ParseAndPrepareMessage(messageChunk, unparsedData, out objectQuery);
                                  var clientMessage = JsonConvert.DeserializeObject<List<Employee>>(objectQuery);
+                                 if (clientMessage.Any(x => x.EmpID == -1))
+                                 {
+                                     readAll = true;
+                                     clientMessage.RemoveAt(clientMessage.Count - 1);
+                                 }
                                  clientMessage.ForEach(x =>
                                  {
                                      var output = $"EmpID:{x.EmpID} Name:{x.Name} Age:{x.Age}";
                                      Console.WriteLine(output);
                                      Trace.WriteLine(output);
                                  });
+                                 if (readAll) break;
                              }
                              catch (Exception ex)
                              {
+                                 break;
                              }
                          }
                          messageBuffer = new byte[messageBuffer.Length];
-                     } while (bytesRead > 0);
+                     } while (bytesRead > 0 || stream.CanRead);
                  });
             mainThread.Start();
             mainThread.Join();
@@ -58,11 +66,27 @@ namespace ConsoleTestClient
 
         private static string ParseAndPrepareMessage(string incoming, string prepend, out string output)
         {
+            //incoming = incoming.Replace("[", "").Replace("]", "");
+            //int indexOfLastItem = incoming.LastIndexOf("}") + 1;
+            //var unparsedData = indexOfLastItem != incoming.Length ? incoming.Substring(indexOfLastItem + 1, incoming.Length - indexOfLastItem - 1) : ""; //-1 is for the comma
+            //output = $"[{(prepend + incoming.Substring(0, indexOfLastItem))}]";
+            //return unparsedData;
+
+            //incoming = incoming.Replace("[", "").Replace("]", "");
+            //incoming = incoming.SkipWhile(x => x != '{').ToString();
+            //int indexOfLastItemClosingBracket = incoming.LastIndexOf("}") + 1;
+            //var unparsedData = incoming.Substring(indexOfLastItemClosingBracket + 1);
+            //output = $"[{(prepend + incoming.Substring(0, indexOfLastItemClosingBracket))}]";
+            //return unparsedData;
+
             incoming = incoming.Replace("[", "").Replace("]", "");
-            int indexOfLastItem = incoming.LastIndexOf("}") + 1;
-            var unparsedData = indexOfLastItem != incoming.Length ? incoming.Substring(indexOfLastItem+1, incoming.Length - indexOfLastItem-1) : ""; //-1 is for the comma
-            output = $"[{(prepend + incoming.Substring(0, indexOfLastItem))}]";
+            int indexOfFirstItemStartingBracket = incoming.IndexOf("{");
+            int indexOfLastItemClosingBracket = incoming.LastIndexOf("}") + 1;
+            var append = incoming.Substring(0, indexOfLastItemClosingBracket);
+            var unparsedData = incoming.Substring(indexOfLastItemClosingBracket).IndexOf("{") != -1 ? incoming.Substring(indexOfLastItemClosingBracket + 1) : "";
+            output = $"[{new string((prepend + append).SkipWhile(x => x != '{').ToArray())}]";
             return unparsedData;
+
         }
     }
 }

@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Consts.cs" />
     <Compile Include="CustomStream.cs" />
     <Compile Include="Employee.cs" />
     <Compile Include="Interfaces\IStreamedService.cs" />

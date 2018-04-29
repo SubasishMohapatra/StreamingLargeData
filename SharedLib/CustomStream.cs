@@ -21,10 +21,11 @@ public class CustomStream : Stream
 
     long totalBytesRead = 0;
     private int recordStartPosition = 0;
+    private bool canRead = true;
 
     public override bool CanRead
     {
-        get { return true; }
+        get { return canRead; }
     }
     public override bool CanSeek
     {
@@ -50,18 +51,22 @@ public class CustomStream : Stream
         }
     }
     public override void Flush()
-    {
+    {        
     }
     public override int Read(byte[] buffer, int offset, int count)
     {
         if (count == 256) return count;
         var records = this.GetRecords(recordStartPosition);
-        if (records.Count <= 0) return 0;
+        if (records.Count <= 0) return count;
+        if (records.Count <= Consts.BatchSize)
+        {
+            records.Add(new Employee() { EmpID = -1, Name = "", Age = -1 });           
+        }
         var serialized = JsonConvert.SerializeObject(records);
         var tempBuffer = Encoding.UTF8.GetBytes(serialized);
         if (tempBuffer.Length <= buffer.Length)
         {
-            recordStartPosition += 1000;
+            recordStartPosition += Consts.BatchSize;
             tempBuffer.CopyTo(buffer, offset);
             totalBytesRead += tempBuffer.Length;
         }
